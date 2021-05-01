@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DEFAULT_MAX_PKT_SIZE = 32766
+	DEFAULT_MAX_PKT_SIZE = 65535
 )
 
 type Packet struct {
@@ -33,8 +33,8 @@ func (pkt *Packet) Pack() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (pkt *Packet) GetLength() uint16 {
-	return pkt.Pkt.GetLength()
+func (pkt *Packet) GetLength() int {
+	return int(pkt.Pkt.GetLength())
 }
 
 func (pkt *Packet) String() string {

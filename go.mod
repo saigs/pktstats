@@ -1,4 +1,4 @@
-module github.com/saigs/pktstats/pkg/datapath
+module github.com/saigs/pktstats
 
 go 1.15
 

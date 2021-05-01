@@ -9,29 +9,42 @@ import (
 )
 
 var (
-	// TBD make this into log.Printf()
 	debug = false
 )
 
-func (p *DatapathContext) GetCount() int {
-	return int(p.stat.count)
+func (p *DatapathContext) GetCount() uint64 {
+	return uint64(p.stat.count)
 }
 
-func (p *DatapathContext) GetLastUpdateCount() int {
-	return int(p.stat.lastUpdateCount)
+func (p *DatapathContext) GetLastUpdateCount() uint64 {
+	return uint64(p.stat.lastUpdateCount)
 }
 
-func (p *DatapathContext) GetAveragePacketSize() int {
-	return int(p.stat.avgPktSize)
+func (p *DatapathContext) GetAveragePacketSize() uint64 {
+	switch GetCtxType() {
+	case CTX_MUTEX:
+		return uint64(p.stat.avgPktSize)
+
+	case CTX_ATOMIC:
+		return uint64(p.stat.avgPktSize)
+
+	case CTX_MAP:
+		return p.GetAveragePktSizeMap()
+
+	case CTX_CONCURRENT:
+		return p.GetAveragePktSizeConcurrent()
+	}
+	return 0
 }
 
 // update stats with mutex lock
 func (p *DatapathContext) UpdateStatsMutex(th int, pktSize int) {
 	p.rwlock.Lock()
-	if p.GetCount() < 1 {
-		p.stat.avgPktSize *= p.stat.count
+	c := p.GetCount()
+	if c < 1 {
+		p.stat.avgPktSize = uint64(pktSize)
 	} else {
-		p.stat.avgPktSize = (p.stat.avgPktSize*p.stat.count + uint64(pktSize)) / (p.stat.count + 1)
+		p.stat.avgPktSize = (p.stat.avgPktSize*c + uint64(pktSize)) / (c + 1)
 	}
 	p.stat.count++
 	p.rwlock.Unlock()
@@ -41,7 +54,12 @@ func (p *DatapathContext) UpdateStatsMutex(th int, pktSize int) {
 
 // update stats atomic
 func (p *DatapathContext) UpdateStatsAtomic(th int, pktSize int) {
-	atomic.AddUint64(&p.stat.avgPktSize, uint64(pktSize))
+	var (
+		s, c uint64
+	)
+	s = atomic.LoadUint64(&p.stat.avgPktSize)
+	c = atomic.LoadUint64(&p.stat.count)
+	atomic.StoreUint64(&p.stat.avgPktSize, (s*c + uint64(pktSize))/(c+1))
 	atomic.AddUint64(&p.stat.count, 1)
 
 	p.ObtainStats(th)
@@ -59,7 +77,12 @@ func (p *DatapathContext) UpdateStatsMap(th int, pktSize int) {
 
 // update stats atomic concurrent
 func (p *DatapathContext) UpdateStatsAtomicConcurrent(th int, pktSize int) {
-	atomic.AddUint64(&p.cstat[th].avgPktSize, uint64(pktSize))
+	var (
+		s, c uint64
+	)
+	s = atomic.LoadUint64(&p.cstat[th].avgPktSize)
+	c = atomic.LoadUint64(&p.cstat[th].count)
+	atomic.StoreUint64(&p.cstat[th].avgPktSize, (s*c + uint64(pktSize))/(c+1))
 	atomic.AddUint64(&p.cstat[th].count, 1)
 
 	p.ObtainStats(th)
@@ -94,11 +117,11 @@ func (p *DatapathContext) GetAveragePktSize() uint64 {
 	if p.GetCount() <= 0 {
 		return 0
 	}
-	ret := uint64(p.GetAveragePacketSize() / p.GetCount())
+	ret := p.GetAveragePacketSize()
 	if debug {
-		log.Printf("size average %d [%d pkts]\n", ret, p.GetCount())
+		log.Printf("average pkt size %d, #pkts %d\n", ret, p.GetCount())
 	}
-	return ret
+	return uint64(ret)
 }
 
 // get average packet size using map
@@ -129,13 +152,12 @@ func (p *DatapathContext) GetAveragePktSizeMap() uint64 {
 // get average packet size concurrent
 func (p *DatapathContext) GetAveragePktSizeConcurrent() uint64 {
 	var (
-		s, c uint64
+		s uint64
 	)
 	for i := 0; i < GetMaxThreads(); i++ {
 		s += atomic.LoadUint64(&p.cstat[i].avgPktSize)
-		c += atomic.LoadUint64(&p.cstat[i].count)
 	}
-	ret := s / c
+	ret := s / uint64(GetMaxThreads())
 	if debug {
 		log.Printf("size average %d [%d pkts]\n", ret, p.GetCount())
 	}
@@ -144,7 +166,7 @@ func (p *DatapathContext) GetAveragePktSizeConcurrent() uint64 {
 
 func (p *DatapathContext) ObtainStats(th int) {
 	// time to obtain stats?
-	if (p.GetCount() - p.GetLastUpdateCount()) >= GetStatsFreq() {
+	if (p.GetCount() - p.GetLastUpdateCount()) >= uint64(GetStatsFreq()) {
 		if fn := GetStatsFn(); fn != nil {
 			fn()
 		}

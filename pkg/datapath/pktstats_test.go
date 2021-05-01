@@ -28,36 +28,36 @@ var (
 	// datapath config
 	dpCfgList = []*DatapathConfig{
 		&DatapathConfig{ // mutex
-			ctxType:       CTX_MUTEX,
-			updateStatsFn: ctxTest.UpdateStatsMutex,
-			getStatsFn:    ctxTest.GetAveragePktSize,
-			getStatsFreq:  TEST_GET_STATS_FREQ,
-			maxThreads:    TEST_MAX_THREADS,
-			maxPkts:       TEST_MAX_PKTS,
+			CtxType:       CTX_MUTEX,
+			UpdateStatsFn: ctxTest.UpdateStatsMutex,
+			GetStatsFn:    ctxTest.GetAveragePktSize,
+			GetStatsFreq:  TEST_GET_STATS_FREQ,
+			MaxThreads:    TEST_MAX_THREADS,
+			MaxPkts:       TEST_MAX_PKTS,
 		},
 		&DatapathConfig{ // atomic
-			ctxType:       CTX_ATOMIC,
-			updateStatsFn: ctxTest.UpdateStatsAtomic,
-			getStatsFn:    ctxTest.GetAveragePktSize,
-			getStatsFreq:  TEST_GET_STATS_FREQ,
-			maxThreads:    TEST_MAX_THREADS,
-			maxPkts:       TEST_MAX_PKTS,
+			CtxType:       CTX_ATOMIC,
+			UpdateStatsFn: ctxTest.UpdateStatsAtomic,
+			GetStatsFn:    ctxTest.GetAveragePktSize,
+			GetStatsFreq:  TEST_GET_STATS_FREQ,
+			MaxThreads:    TEST_MAX_THREADS,
+			MaxPkts:       TEST_MAX_PKTS,
 		},
 		&DatapathConfig{ // map
-			ctxType:       CTX_MAP,
-			updateStatsFn: ctxTest.UpdateStatsMap,
-			getStatsFn:    ctxTest.GetAveragePktSizeMap,
-			getStatsFreq:  TEST_GET_STATS_FREQ,
-			maxThreads:    TEST_MAX_THREADS,
-			maxPkts:       TEST_MAX_PKTS,
+			CtxType:       CTX_MAP,
+			UpdateStatsFn: ctxTest.UpdateStatsMap,
+			GetStatsFn:    ctxTest.GetAveragePktSizeMap,
+			GetStatsFreq:  TEST_GET_STATS_FREQ,
+			MaxThreads:    TEST_MAX_THREADS,
+			MaxPkts:       TEST_MAX_PKTS,
 		},
 		&DatapathConfig{ // concurrent
-			ctxType:       CTX_CONCURRENT,
-			updateStatsFn: ctxTest.UpdateStatsAtomicConcurrent,
-			getStatsFn:    ctxTest.GetAveragePktSizeConcurrent,
-			getStatsFreq:  TEST_GET_STATS_FREQ,
-			maxThreads:    TEST_MAX_THREADS,
-			maxPkts:       TEST_MAX_PKTS,
+			CtxType:       CTX_CONCURRENT,
+			UpdateStatsFn: ctxTest.UpdateStatsAtomicConcurrent,
+			GetStatsFn:    ctxTest.GetAveragePktSizeConcurrent,
+			GetStatsFreq:  TEST_GET_STATS_FREQ,
+			MaxThreads:    TEST_MAX_THREADS,
+			MaxPkts:       TEST_MAX_PKTS,
 		},
 	}
 )
@@ -74,7 +74,7 @@ func BenchmarkMutex(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("mutex datapath processed %d pkts, average size %d\n",
+	log.Printf("mutex datapath processed %d pkts, average size %v\n",
 		ctx.GetCount(), GetStatsFn())
 }
 
@@ -84,7 +84,7 @@ func BenchmarkAtomic(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("atomic datapath processed %d pkts, average size %d\n",
+	log.Printf("atomic datapath processed %d pkts, average size %v\n",
 		ctx.GetCount(), GetStatsFn())
 }
 
@@ -94,7 +94,7 @@ func BenchmarkMap(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("map datapath processed %d pkts, average size %d\n",
+	log.Printf("map datapath processed %d pkts, average size %v\n",
 		ctx.GetCount(), GetStatsFn())
 }
 
@@ -104,6 +104,6 @@ func BenchmarkConcurrent(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("concurrent datapath processed %d pkts, average size %d\n",
+	log.Printf("concurrent datapath processed %d pkts, average size %v\n",
 		ctx.GetCount(), GetStatsFn())
 }

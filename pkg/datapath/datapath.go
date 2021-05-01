@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"math/rand"
+	"time"
 
 	pkt "github.com/saigs/pktstats/pkg/pkt"
 	que "github.com/saigs/pktstats/pkg/queue"
@@ -45,12 +47,12 @@ type (
 
 	// config for datapath
 	DatapathConfig struct {
-		ctxType       DatapathContextType // context/lock type
-		updateStatsFn updateStatsFunc     // update stats routine
-		getStatsFn    getStatsFunc        // get stats function
-		getStatsFreq  int                 // get stats every nth updates e.g. 1/2, 1/3,...
-		maxThreads    int                 // max supported threads
-		maxPkts       int                 // max packets handled total
+		CtxType       DatapathContextType // context/lock type
+		UpdateStatsFn updateStatsFunc     // update stats routine
+		GetStatsFn    getStatsFunc        // get stats function
+		GetStatsFreq  int                 // get stats every nth updates e.g. 1/2, 1/3,...
+		MaxThreads    int                 // max supported threads
+		MaxPkts       int                 // max packets handled total
 	}
 )
 
@@ -77,47 +79,53 @@ func validateConfig(c *DatapathConfig) error {
 	if c == nil {
 		return fmt.Errorf("invalid datapath config nil")
 	}
-	if c.ctxType < CTX_MUTEX || c.ctxType > CTX_CONCURRENT {
-		return fmt.Errorf("invalid ctxType %d", c.ctxType)
+	if c.CtxType < CTX_MUTEX || c.CtxType > CTX_CONCURRENT {
+		return fmt.Errorf("invalid CtxType %d", c.CtxType)
 	}
-	if c.maxPkts <= 1 {
-		return fmt.Errorf("invalid maxPkts %d", c.maxPkts)
+	if c.MaxPkts <= 1 {
+		return fmt.Errorf("invalid MaxPkts %d", c.MaxPkts)
 	}
-	if c.maxThreads < 1 {
-		return fmt.Errorf("invalid maxThreads %d", c.maxThreads)
+	if c.MaxThreads < 1 {
+		return fmt.Errorf("invalid MaxThreads %d", c.MaxThreads)
 	}
-	if c.updateStatsFn == nil || c.getStatsFn == nil {
+	if c.UpdateStatsFn == nil || c.GetStatsFn == nil {
 		return fmt.Errorf("invalid nil update/get functions")
 	}
 	return nil
 }
 
+func GetCtxType() DatapathContextType {
+	if dpCfg == nil {
+		return 0
+	}
+	return dpCfg.CtxType
+}
 func GetStatsFreq() int {
 	if dpCfg == nil {
 		return 0
 	}
-	return dpCfg.getStatsFreq
+	return dpCfg.GetStatsFreq
 }
 
 func GetStatsFn() getStatsFunc {
 	if dpCfg == nil {
 		return nil
 	}
-	return dpCfg.getStatsFn
+	return dpCfg.GetStatsFn
 }
 
 func GetMaxThreads() int {
 	if dpCfg == nil {
 		return 0
 	}
-	return dpCfg.maxThreads
+	return dpCfg.MaxThreads
 }
 
 func GetMaxPkts() int {
 	if dpCfg == nil {
 		return 0
 	}
-	return dpCfg.maxPkts
+	return dpCfg.MaxPkts
 }
 
 //
@@ -129,10 +137,11 @@ func populatePacketQueue() error {
 	}
 
 	// spray packets across threads
-	pq = make([]*que.Queue, dpCfg.maxThreads)
-	m := int(dpCfg.maxPkts / dpCfg.maxThreads)
-	for i := 0; i < dpCfg.maxThreads; i++ {
-		if pq[i] = NewQueue(m); pq[i] == nil {
+	log.Printf("Populating datapath queues [%d]", dpCfg.MaxThreads)
+	pq = make([]*que.Queue, dpCfg.MaxThreads)
+	m := dpCfg.MaxPkts / dpCfg.MaxThreads
+	for i := 0; i < dpCfg.MaxThreads; i++ {
+		if pq[i] = que.NewQueue(m); pq[i] == nil {
 			return fmt.Errorf("error: failed creating packet quque %d", i)
 		}
 		for k := 0; k < m; k++ {
@@ -155,12 +164,12 @@ func InitDatapath(cfg *DatapathConfig) error {
 	}
 
 	dpCfg = &DatapathConfig{
-		ctxType:       cfg.ctxType,
-		updateStatsFn: cfg.updateStatsFn,
-		getStatsFn:    cfg.getStatsFn,
-		getStatsFreq:  cfg.getStatsFreq,
-		maxThreads:    cfg.maxThreads,
-		maxPkts:       cfg.maxPkts,
+		CtxType:       cfg.CtxType,
+		UpdateStatsFn: cfg.UpdateStatsFn,
+		GetStatsFn:    cfg.GetStatsFn,
+		GetStatsFreq:  cfg.GetStatsFreq,
+		MaxThreads:    cfg.MaxThreads,
+		MaxPkts:       cfg.MaxPkts,
 	}
 
 	// initialize context
@@ -169,8 +178,9 @@ func InitDatapath(cfg *DatapathConfig) error {
 	// populate packet queue
 	populatePacketQueue()
 
+	rand.Seed(time.Now().UTC().UnixNano())
 	log.Printf("Init datapath: type %s, threads %d, total pkts %d\n",
-		dpCfg.ctxType.String(), dpCfg.maxThreads, dpCfg.maxPkts)
+		dpCfg.CtxType.String(), dpCfg.MaxThreads, dpCfg.MaxPkts)
 	return nil
 }
 
@@ -181,8 +191,8 @@ func GetNextPacket(t int) (interface{}, int) {
 	if pq[t].IsEmpty() {
 		return nil, 0
 	}
-	if pp, err := pq[t].Dequeue(); err == nil {
-		p := pp.(pkt.Packet)
+	if pp, err := pq[t].Dequeue(); err == nil && pp != nil {
+		p := pp.(*pkt.Packet)
 		return pp, p.GetLength()
 	}
 	return nil, 0
@@ -199,7 +209,7 @@ func PreprocessPacket(th int, p interface{}, sz int) error {
 // process a packet, returns size
 //
 func ProcessPacket(th int, p interface{}, sz int) error {
-	dpCfg.updateStatsFn(th, sz)
+	dpCfg.UpdateStatsFn(th, sz)
 	return nil
 }
 
@@ -208,6 +218,14 @@ func ProcessPacket(th int, p interface{}, sz int) error {
 //
 func PostprocessPacket(th int, p interface{}, sz int) error {
 	return nil
+}
+
+func duration(msg string, start time.Time) {
+    log.Printf("%v took %v\n", msg, time.Since(start))
+}
+
+func track(msg string) (string, time.Time) {
+    return msg, time.Now()
 }
 
 //
@@ -219,6 +237,8 @@ func RunDatapath() {
 		panic("nil datapath config or context, exiting..\n")
 	}
 
+	defer duration(track("RunDatapath"))
+
 	var (
 		wg sync.WaitGroup
 	)
@@ -227,7 +247,7 @@ func RunDatapath() {
 	processPkt := func(th int) {
 		defer wg.Done()
 		// handle packets from queue
-		for p := 0; p < len(pq[th]); p++ {
+		for ; !pq[th].IsEmpty(); {
 			pkt, sz := GetNextPacket(th)
 			PreprocessPacket(th, pkt, sz)
 			ProcessPacket(th, pkt, sz)
@@ -236,8 +256,8 @@ func RunDatapath() {
 	}
 
 	// main processing
-	wg.Add(dpCfg.maxThreads)
-	for th := 0; th < dpCfg.maxThreads; th++ {
+	wg.Add(dpCfg.MaxThreads)
+	for th := 0; th < dpCfg.MaxThreads; th++ {
 		go processPkt(th)
 	}
 	wg.Wait()

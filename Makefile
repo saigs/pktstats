@@ -1,7 +1,7 @@
 #
 # primitivitives for high-speed packet statistics processing
 #
-PROGRAM := datapath
+PROGRAM := server
 BUILD_DIR := build
 
 all: $(PROGRAM)
@@ -10,6 +10,9 @@ $(PROGRAM):
 	@mkdir -p $(BUILD_DIR)
 	@GO111MODULE=on go build -i -v -o $(BUILD_DIR)/ ./...
 	@echo "Done $@"
+
+run: $(PROGRAM)
+	@$(BUILD_DIR)/$(PROGRAM)
 
 test:
 	@echo "Starting test.."

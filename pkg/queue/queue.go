@@ -2,7 +2,6 @@ package queue
 
 import (
 	"fmt"
-	"log"
 )
 
 type Queue struct {
@@ -33,7 +32,6 @@ func (q *Queue) Queue(elem interface{}) error {
 	}
 	q.current++
 	q.arr[q.current] = elem
-	log.Printf("Added to queue (%d)\n", q.current)
 	return nil
 }
 
@@ -42,7 +40,6 @@ func (q *Queue) Dequeue() (interface{}, error) {
 		return nil, fmt.Errorf("queue is empty")
 	}
 	out := q.arr[q.current]
-	log.Printf("Removed from queue (%d)\n", q.current)
 	q.current--
 	return out, nil
 }
