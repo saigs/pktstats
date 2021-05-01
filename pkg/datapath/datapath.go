@@ -6,8 +6,8 @@ package datapath
 import (
 	"fmt"
 	"log"
-	"sync"
 	"math/rand"
+	"sync"
 	"time"
 
 	pkt "github.com/saigs/pktstats/pkg/pkt"
@@ -221,11 +221,11 @@ func PostprocessPacket(th int, p interface{}, sz int) error {
 }
 
 func duration(msg string, start time.Time) {
-    log.Printf("%v took %v\n", msg, time.Since(start))
+	log.Printf("%v took %v\n", msg, time.Since(start))
 }
 
 func track(msg string) (string, time.Time) {
-    return msg, time.Now()
+	return msg, time.Now()
 }
 
 //
@@ -247,7 +247,7 @@ func RunDatapath() {
 	processPkt := func(th int) {
 		defer wg.Done()
 		// handle packets from queue
-		for ; !pq[th].IsEmpty(); {
+		for !pq[th].IsEmpty() {
 			pkt, sz := GetNextPacket(th)
 			PreprocessPacket(th, pkt, sz)
 			ProcessPacket(th, pkt, sz)

@@ -59,7 +59,7 @@ func (p *DatapathContext) UpdateStatsAtomic(th int, pktSize int) {
 	)
 	s = atomic.LoadUint64(&p.stat.avgPktSize)
 	c = atomic.LoadUint64(&p.stat.count)
-	atomic.StoreUint64(&p.stat.avgPktSize, (s*c + uint64(pktSize))/(c+1))
+	atomic.StoreUint64(&p.stat.avgPktSize, (s*c+uint64(pktSize))/(c+1))
 	atomic.AddUint64(&p.stat.count, 1)
 
 	p.ObtainStats(th)
@@ -82,7 +82,7 @@ func (p *DatapathContext) UpdateStatsAtomicConcurrent(th int, pktSize int) {
 	)
 	s = atomic.LoadUint64(&p.cstat[th].avgPktSize)
 	c = atomic.LoadUint64(&p.cstat[th].count)
-	atomic.StoreUint64(&p.cstat[th].avgPktSize, (s*c + uint64(pktSize))/(c+1))
+	atomic.StoreUint64(&p.cstat[th].avgPktSize, (s*c+uint64(pktSize))/(c+1))
 	atomic.AddUint64(&p.cstat[th].count, 1)
 
 	p.ObtainStats(th)
