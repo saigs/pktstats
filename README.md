@@ -170,6 +170,17 @@ Benchmark tests can be run using the following:
 make benchmark
 ```
 
+# Results - Datapath Numbers for various operations
+
+| Test Type / #Packets (average of 100x run, 10 threads in usecs) | 1,000   | 10,000  | 100,000    | 1,000,000   |
+|-----------------------------------------------------------------|--------|---------|------------|-------------|
+| Mutex                                                           |  560   |  1,948  |   16,460   |   163,100   |
+| Atomic                                                          |  150   |  1,067  |   11,378   |   121,002   |
+| Atomic + padding                                                |  152   |  1,241  |   13,511   |   147,748   |
+| Map                                                             | 1,758  | 64,510  | 3,231,620  | 63,401,381  |
+| Concurrent                                                      |  122   |   330   |   3,357    |   33,922    |
+| Concurrent + padding                                            |  130   |   268   |   1,902    |   18,204    |
+
 # Intrepretation
 
 - `BenchmarkWithMap` seems to perform the worst in terms of space and time complexity owing to the costly map update and read operations
@@ -178,3 +189,9 @@ make benchmark
 - `BenchmarkConcurrent` seems to outperform the atomic by a phenomenal 3x degree.
 
 More results and references will be added upon further experiments.
+
+# References
+
+# Acknowledgements
+
+I would like to thank Vimal Kumar for advising along this project.

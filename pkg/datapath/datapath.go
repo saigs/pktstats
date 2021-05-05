@@ -28,9 +28,10 @@ type (
 
 	// stat structure
 	PktStat struct {
-		avgPktSize      uint64 // rounded average so far
-		count           uint64 // count of packets seen so far
-		lastUpdateCount uint64 // last update count of packet
+		avgPktSize      uint64    // rounded average so far
+		count           uint64    // count of packets seen so far
+		lastUpdateCount uint64    // last update count of packet
+		_padbytes       [5]uint64 // cacheline padding
 	}
 
 	// dynamic datapath context
@@ -221,7 +222,8 @@ func PostprocessPacket(th int, p interface{}, sz int) error {
 }
 
 func duration(msg string, start time.Time) {
-	log.Printf("%v took %v\n", msg, time.Since(start))
+	log.Printf("%v (%s) took %v us\n",
+		msg, GetCtxType().String(), time.Since(start).Microseconds())
 }
 
 func track(msg string) (string, time.Time) {

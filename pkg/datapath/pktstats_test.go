@@ -74,8 +74,8 @@ func BenchmarkMutex(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("mutex datapath processed %d pkts, average size %v\n",
-		ctx.GetCount(), GetStatsFn())
+	log.Printf("mutex datapath processed %d pkts, average size %d\n",
+		ctx.GetCount(), GetStatsFn()())
 }
 
 func BenchmarkAtomic(b *testing.B) {
@@ -84,8 +84,8 @@ func BenchmarkAtomic(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("atomic datapath processed %d pkts, average size %v\n",
-		ctx.GetCount(), GetStatsFn())
+	log.Printf("atomic datapath processed %d pkts, average size %d\n",
+		ctx.GetCount(), GetStatsFn()())
 }
 
 func BenchmarkMap(b *testing.B) {
@@ -94,8 +94,8 @@ func BenchmarkMap(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("map datapath processed %d pkts, average size %v\n",
-		ctx.GetCount(), GetStatsFn())
+	log.Printf("map datapath processed %d pkts, average size %d\n",
+		ctx.GetCount(), GetStatsFn()())
 }
 
 func BenchmarkConcurrent(b *testing.B) {
@@ -104,6 +104,6 @@ func BenchmarkConcurrent(b *testing.B) {
 		RunDatapath()
 	}
 	ctx := GetRunningContext()
-	log.Printf("concurrent datapath processed %d pkts, average size %v\n",
-		ctx.GetCount(), GetStatsFn())
+	log.Printf("concurrent datapath processed %d pkts, average size %d\n",
+		ctx.GetCount(), GetStatsFn()())
 }
